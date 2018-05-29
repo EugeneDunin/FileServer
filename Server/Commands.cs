@@ -8,7 +8,7 @@ namespace Server
 {
     public abstract class Commands
     {
-        public enum ClientCommands { EX = -1, LOAD, SEND, REG, AUTH };
+        public enum ClientCommands { EX = -1, LOAD, REG, SEND, AUTH };
             /* EX - some exeeption, that server may repair
              * LOAD - save clien file
              * SEND - allow client to download his file

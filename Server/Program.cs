@@ -62,18 +62,32 @@ namespace Server
 
         private async static void UdpListener()
         {
+            /*string Host = Dns.GetHostName();
+            IPAddress my_ip = Dns.GetHostByName(Host).AddressList[0];
+            IPEndPoint iPEnd = new IPEndPoint(my_ip, 8081);*/
+
             UdpClient udp = new UdpClient(8081);
-            udp.JoinMulticastGroup(IPAddress.Parse(LocalGroup),10);
+            udp.JoinMulticastGroup(IPAddress.Parse(LocalGroup),1);
+            udp.MulticastLoopback = false;
+            udp.EnableBroadcast = true;
+            
+
             string IP = Dns.GetHostByName(Dns.GetHostName()).AddressList[0].ToString();
             byte[] datagram = Encoding.Default.GetBytes("Server-"+IP);
             byte[] mes = Encoding.Default.GetBytes("Client");
+
+            IPEndPoint iPEnd = null;
             while (true)
             {
                 UdpReceiveResult result = await udp.ReceiveAsync();
+                Console.WriteLine(result.Buffer);
                 if (result.Buffer == mes)
                 {
                     await udp.SendAsync(datagram,datagram.Length);
                 }
+                /*byte[] data = udp.Receive(ref iPEnd);
+                string message = Encoding.Unicode.GetString(data);
+                Console.WriteLine(message);*/
             }
         }
     }

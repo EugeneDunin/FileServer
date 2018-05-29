@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Server.Security;
+using System.Security.Cryptography;
 //Data Source = (LocalDB)\MSSQLLocalDB;AttachDbFilename=d:\GitHub\ServerForFileStorage\Server\Server\App_Data\Database.mdf;Integrated Security = True
 
 namespace Server
@@ -24,7 +25,8 @@ namespace Server
         private bool flag = false;                          //Прошёл ли пользователь авторизацию
         private string folder = null;                       //Папка клиента, в которой хранятся файлы
         private AES_DiffieHellman aes = null;               //Объект защиты данных
-        private NetworkFileWork file = new NetworkFileWork(); //Работа по передачи данных по сети 
+        private NetworkFileWork file = new NetworkFileWork(); //Работа по передачи данных по сети
+
         //====================================================================================================
         //Регистрируем новый TCP-запрос
         public Client(TcpClient NewClient)
@@ -34,26 +36,95 @@ namespace Server
             //client.Client.LocalEndPoint;
         }
         //====================================================================================================
-        public void GetClientInf()
+        public void CommandHandler()
+        {
+            try
+            {
+                ClientCommands currCommand = GetCommand();
+                switch (currCommand)
+                {
+                    case ClientCommands.AUTH:
+                        {
+                            GetClientInfHash();
+                            break;
+                        }
+                    case ClientCommands.REG:
+                        {
+                            GetClientInfHash();
+                            break;
+                        }
+                    case ClientCommands.LOAD:
+                        {
+                            GetClientInf(currCommand);
+                            break;
+                        }
+                    case ClientCommands.SEND:
+                        {
+                            GetClientInf(currCommand);
+                            break;
+                        }
+                    case ClientCommands.EX:
+                        {
+                            Disconnect();
+                            break;
+                        }
+                }
+            }
+            catch (Exception error)
+            {
+                Console.Error.WriteLine(error.Message);
+                Disconnect();
+                return;
+            }
+        }
+
+        public void GetClientInf(ClientCommands command)
+        {
+            /*if (((currCommand == ClientCommands.AUTH || currCommand ==  ClientCommands.REG) && user_inf == null) ||
+                 user_inf != null)
+            {*/
+                byte[] length = new byte[sizeof(ulong)];
+                networkStream.Read(length, 0, length.Length);
+
+                byte[] message = new byte[BitConverter.ToUInt64(length, 0)];
+                networkStream.Read(message, 0, message.Length);
+
+                /*if (user_inf == null)
+                {
+                   ToUser(message);
+                }*/
+                ProcessingRequest(command,message);
+            /*}
+            else
+            {
+                Disconnect();
+                return;
+            }*/
+        }
+
+        public void GetClientInfHash()
         {
             try
             {
                 ClientCommands currCommand = GetCommand();
 
-                if (((currCommand == ClientCommands.AUTH || currCommand ==  ClientCommands.REG) && user_inf == null) ||
+                if (((currCommand == ClientCommands.AUTH || currCommand == ClientCommands.REG) && user_inf == null) ||
                     user_inf != null)
                 {
-                    byte[] length = new byte[sizeof(ulong)];
-                    networkStream.Read(length, 0, length.Length);
-                    byte[] message = new byte[BitConverter.ToUInt64(length, 0)];
-                    networkStream.Read(message, 0, message.Length);
+                    byte[] login_hash_length = new byte[sizeof(ulong)];
+                    networkStream.Read(login_hash_length, 0, login_hash_length.Length);
 
-                    if (user_inf == null)
-                    {
-                        ToUser(message);
-                    }
-                    ProcessingRequest(currCommand,message);
-                }
+                    byte[] login_hash = new byte[BitConverter.ToUInt64(login_hash_length, 0)];
+                    networkStream.Read(login_hash, 0, login_hash.Length);
+
+                    byte[] password_hash_length = new byte[sizeof(ulong)];
+                    networkStream.Read(password_hash_length, 0, password_hash_length.Length);
+
+                    byte[] password_hash = new byte[sizeof(ulong)];
+                    networkStream.Read(password_hash, 0, password_hash.Length);
+
+                    ToUserHash(currCommand,login_hash, password_hash);
+                 }
                 else
                 {
                     Disconnect();
@@ -92,7 +163,28 @@ namespace Server
             builder.Append(Encoding.UTF8.GetString(data));
             string login = builder.ToString().Split(' ')[0];
             string password = builder.ToString().Split(' ')[1];
+            //this.user_inf = new User(login, password);
+        }
+
+        public void ToUserHash(ClientCommands recieve_command, byte[] login, byte[] password)
+        {
             this.user_inf = new User(login, password);
+            switch (recieve_command)
+            {
+                case ClientCommands.AUTH:
+                    {
+                        AUTH_Send_Message();
+                        break;
+                    }
+                case ClientCommands.REG:
+                    {
+                        REG_Send_Message();
+                        break;
+                    }
+                default:
+                    Disconnect();
+                    break;
+            }
         }
         //====================================================================================================
         //Вызывает метод обраблтки пользовательского запроса 
@@ -100,16 +192,6 @@ namespace Server
         {
             switch (recieve_command)
             {
-                case ClientCommands.AUTH:
-                    {
-                        AUTH_Send_Message(recieve_command);
-                        break;
-                    }
-                case ClientCommands.REG:
-                    {
-                        REG_Send_Message(recieve_command);
-                        break;
-                    }
                 case ClientCommands.LOAD:
                     {
                         LOAD_Send_Message(message);
@@ -118,11 +200,6 @@ namespace Server
                 case ClientCommands.SEND:
                     {
                         SEND_Send_Message(message);
-                        break;
-                    }
-                case ClientCommands.EX:
-                    {
-                        Disconnect();
                         break;
                     }
             }
@@ -149,14 +226,13 @@ namespace Server
         }
         //====================================================================================================
         //Ответ на попытку авторизации
-        private void AUTH_Send_Message(ClientCommands recieve_command)
+        private void AUTH_Send_Message()
         {
             this.response_buf = new byte[Client.command_length];
             if (UsersData.IsUserExist(user_inf, ref Server.UserList))
             {
-
                 this.flag = true;                                               //Взаимодействие с пользователем активировано
-                this.folder = user_inf.login.GetHashCode().ToString() + "//";   //Задаём персональное имя папки пользователя
+                this.folder = user_inf.login_hash.ToString() + "//";   //Задаём персональное имя папки пользователя
 
                 //Отправляем ответ об успешной авторизации
                 this.response_buf[0] = Convert.ToByte(ServerAnswers.OK);        
@@ -165,10 +241,41 @@ namespace Server
                 //Обмениваемся ключами и создаём секретный
                 aes = new AES_DiffieHellman();                                 
                 file.KeysExchange(client, networkStream,aes);
-                
+
+                //Ждать зашифрованные хэши
+                while (client.Connected)
+                {
+                    if (networkStream.DataAvailable)
+                    {
+                        byte[] login = null;
+                        FileProtocolReader.Read(ref login, networkStream);
+                        aes.Decript(ref login);
+
+                        byte[] password = null;
+                        FileProtocolReader.Read(ref password, networkStream);
+                        aes.Decript(ref password);
+
+                        SHA256 sHA = SHA256Managed.Create();
+                        if (sHA.ComputeHash(login) == user_inf.login_hash &&
+                            sHA.ComputeHash(password) == user_inf.login_hash)
+                        {
+                            user_inf.login = Encoding.Default.GetString(login);
+                            user_inf.password = Encoding.Default.GetString(password);
+
+                            this.response_buf[0] = Convert.ToByte(ServerAnswers.OK);
+                            networkStream.Write(response_buf, 0, response_buf.Length);
+                        }
+                        else
+                        {
+                            this.response_buf[0] = Convert.ToByte(ServerAnswers.NOPE);
+                            networkStream.Write(response_buf, 0, response_buf.Length);
+                        }
+                    }
+                }
+
                 //Посылаем информацию о названиях всех доступных файлах
                 FileHierarchy fileHierarchy = new FileHierarchy(this.folder);
-                fileHierarchy.NetworkSendInfo(networkStream); 
+                fileHierarchy.NetworkSendInfo(networkStream,aes); 
             }
             else
             {
@@ -179,7 +286,7 @@ namespace Server
         }
         //====================================================================================================
         //Ответ на попытку регистрации
-        private void REG_Send_Message(ClientCommands recieve_command)
+        private void REG_Send_Message()
         {
             this.response_buf = new byte[Client.command_length];
             if (UsersData.IsUserExist(user_inf, ref Server.UserList))

@@ -100,11 +100,17 @@ namespace Server.FileWork
             {
                 if (networkStream.DataAvailable)
                 {
-                   buf = new byte[sizeof(ulong)];
+                   byte[] key_length = new byte[sizeof(ulong)];
                    networkStream.Read(this.buf, 0, buf.Length);
-                   
-                   byte[] iv = new byte[sizeof(ulong)];
-                   networkStream.Read(iv, 0, iv.Length);
+
+                    byte[] client_key = new byte[buf.LongLength];
+                   networkStream.Read(client_key, 0, client_key.Length);
+
+                   byte[] iv_length = new byte[sizeof(ulong)];
+                   networkStream.Read(iv_length, 0, iv_length.Length);
+
+                   byte[] iv = new byte[buf.LongLength];
+                   networkStream.Read(iv, 0, iv_length.Length);
 
                    aes.GetSecretKey(buf,iv);
                    return;

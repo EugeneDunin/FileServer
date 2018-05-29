@@ -63,6 +63,7 @@
     <Compile Include="Client.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="FileProtocol.cs" />
+    <Compile Include="FileProtocolReader.cs" />
     <Compile Include="FileWork\FileHierarchy.cs" />
     <Compile Include="FileWork\NetworkFileWork.cs" />
     <Compile Include="Program.cs" />

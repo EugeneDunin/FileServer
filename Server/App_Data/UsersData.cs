@@ -46,7 +46,14 @@ namespace Server.App_Data
         {
             if (UserList != null)
             {
-                return UserList.Contains(user);
+                foreach (User u in UserList)
+                {
+                    if (u.login_hash == user.login_hash && u.password_hash == user.password_hash)
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
             else
             {
