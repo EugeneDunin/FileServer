@@ -36,7 +36,7 @@ namespace Server
             //client.Client.LocalEndPoint;
         }
         //====================================================================================================
-        public void CommandHandler()
+        public void Handler()
         {
             try
             {
@@ -45,12 +45,12 @@ namespace Server
                 {
                     case ClientCommands.AUTH:
                         {
-                            GetClientInfHash();
+                            GetClientInfHash(currCommand);
                             break;
                         }
                     case ClientCommands.REG:
                         {
-                            GetClientInfHash();
+                            GetClientInfHash(currCommand);
                             break;
                         }
                     case ClientCommands.LOAD:
@@ -102,34 +102,17 @@ namespace Server
             }*/
         }
 
-        public void GetClientInfHash()
+        public void GetClientInfHash(ClientCommands command)
         {
             try
             {
-                ClientCommands currCommand = GetCommand();
+                byte[] login_hash = null;
+                FileProtocolReader.Read(ref login_hash, networkStream);
 
-                if (((currCommand == ClientCommands.AUTH || currCommand == ClientCommands.REG) && user_inf == null) ||
-                    user_inf != null)
-                {
-                    byte[] login_hash_length = new byte[sizeof(ulong)];
-                    networkStream.Read(login_hash_length, 0, login_hash_length.Length);
+                byte[] password_hash = null;
+                FileProtocolReader.Read(ref password_hash, networkStream);
 
-                    byte[] login_hash = new byte[BitConverter.ToUInt64(login_hash_length, 0)];
-                    networkStream.Read(login_hash, 0, login_hash.Length);
-
-                    byte[] password_hash_length = new byte[sizeof(ulong)];
-                    networkStream.Read(password_hash_length, 0, password_hash_length.Length);
-
-                    byte[] password_hash = new byte[sizeof(ulong)];
-                    networkStream.Read(password_hash, 0, password_hash.Length);
-
-                    ToUserHash(currCommand,login_hash, password_hash);
-                 }
-                else
-                {
-                    Disconnect();
-                    return;
-                }
+                ToUserHash(command,login_hash, password_hash);
             }
             catch (Exception error)
             {
@@ -157,14 +140,14 @@ namespace Server
         }
         //====================================================================================================
         //Конвертирует байты в объект User
-        public void ToUser(byte[] data)
+        /*public void ToUser(byte[] data)
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(Encoding.UTF8.GetString(data));
             string login = builder.ToString().Split(' ')[0];
             string password = builder.ToString().Split(' ')[1];
             //this.user_inf = new User(login, password);
-        }
+        }*/
 
         public void ToUserHash(ClientCommands recieve_command, byte[] login, byte[] password)
         {
@@ -214,7 +197,7 @@ namespace Server
                 {
                     if (client.Available != 0) //Есть ли в потоке сокета данные 0 - нет, > 0 есть
                     {
-                        GetClientInf(); //Обрабатываем клиентский запрос
+                        Handler(); //Обрабатываем клиентский запрос
                     }
                 }
                 catch (Exception error)
@@ -296,8 +279,9 @@ namespace Server
             else
             {
                 Server.UserList.Add(user_inf);                           //Пополняем список новым пользователем
+                UsersData.WriteUsersInf(Server.users_inf_way,Server.UserList);
                 this.response_buf[0] = Convert.ToByte(ServerAnswers.OK); //Регистрания пройдена успешно
-                this.folder = user_inf.login.GetHashCode().ToString() + "//";
+                this.folder = user_inf.login_hash.ToString() + "//";
                 Directory.CreateDirectory(this.folder);
             }
             networkStream.Write(response_buf, 0, response_buf.Length);

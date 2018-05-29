@@ -47,6 +47,7 @@ namespace Server
             {
                 ServerListener.Stop();
             }
+            UsersData.WriteUsersInf(users_inf_way,UserList);
         }
     }
 }
