@@ -48,7 +48,7 @@ namespace Server.App_Data
             {
                 foreach (User u in UserList)
                 {
-                    if (u.login_hash == user.login_hash && u.password_hash == user.password_hash)
+                    if (u.login_hash.ToString() == user.login_hash.ToString() && u.password_hash.ToString() == user.password_hash.ToString())
                     {
                         return true;
                     }

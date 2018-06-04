@@ -88,13 +88,16 @@ namespace Server.FileWork
         public void KeysExchange(TcpClient client, NetworkStream networkStream, AES_DiffieHellman aes)
         {
             //Отправляем свой ключ
-            byte[] buf = new byte[aes.PublicKey.LongLength];
+            FileProtocolReader.Write(aes.PublicKey, networkStream);
+            FileProtocolReader.Write(aes.aes.IV, networkStream);
+
+            /*byte[] buf = new byte[aes.PublicKey.LongLength];
             networkStream.Write(buf, 0, buf.Length);
             networkStream.Write(aes.PublicKey, 0, aes.PublicKey.Length);
             //Отправляем свой вектор инициализации
             buf = new byte[aes.aes.IV.LongLength];
             networkStream.Write(buf, 0, buf.Length);
-            networkStream.Write(aes.aes.IV, 0, aes.aes.IV.Length);
+            networkStream.Write(aes.aes.IV, 0, aes.aes.IV.Length);*/
 
             while (client.Connected)
             {

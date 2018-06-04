@@ -17,5 +17,13 @@ namespace Server
             buf = new byte[BitConverter.ToUInt64(length, 0)];
             net.Read(buf, 0, buf.Length);
         }
+
+        public static void Write(byte[] buf, NetworkStream net)
+        {
+            byte[] length = new byte[sizeof(ulong)];
+            length = BitConverter.GetBytes(buf.LongLength);
+            net.Write(length, 0, length.Length);
+            net.Write(buf, 0, buf.Length);
+        }
     }
 }

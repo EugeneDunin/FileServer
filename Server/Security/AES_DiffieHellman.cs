@@ -177,7 +177,7 @@ namespace Server.Security
     class AES_DiffieHellman
     {
         public byte[] PublicKey { get; private set; } //Ключ, передаваемый по сети для последующего получения секретного
-        private byte[] Key;
+        private byte[] Key = null;
         private ECDiffieHellmanCng server = new ECDiffieHellmanCng();
         public Aes aes { get; private set; }
         private byte[] Client_IV;
@@ -188,20 +188,38 @@ namespace Server.Security
             this.aes = new AesCryptoServiceProvider();
             Own_IV = this.aes.IV;
 
-            using (this.server)
-            {
-                server.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
-                server.HashAlgorithm = CngAlgorithm.Sha256;
-                this.PublicKey = server.PublicKey.ToByteArray();
-            }
+            server.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
+            server.HashAlgorithm = CngAlgorithm.Sha256;
+            this.PublicKey = server.PublicKey.ToByteArray();
+            Console.WriteLine(server.Key.KeySize.ToString());
+
+            //this.Key = server.DeriveKeyMaterial(CngKey.Import(RandomKey.GetKey(140), CngKeyBlobFormat.EccPublicBlob));
         }
+       
 
         public void GetSecretKey(byte[] ClientPublicKey, byte[] iv)
         {
-            using (this.server)
+
+             /*using (this.server)
+             {
+                 CngKey k = CngKey.Import(ClientPublicKey, CngKeyBlobFormat.GenericPrivateBlob);
+                 this.Key = server.DeriveKeyMaterial(CngKey.Import(ClientPublicKey, CngKeyBlobFormat.EccPublicBlob));
+                 Client_IV = iv;
+             }*/
+            try
             {
+                Console.WriteLine(server.Key);
+                CngKey k = CngKey.Import(ClientPublicKey, CngKeyBlobFormat.GenericPrivateBlob);
                 this.Key = server.DeriveKeyMaterial(CngKey.Import(ClientPublicKey, CngKeyBlobFormat.EccPublicBlob));
                 Client_IV = iv;
+            }
+            catch (CryptographicException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Server.Security;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -37,6 +38,9 @@ namespace Server
 
         private static void startServer()
         {
+            AES_DiffieHellman aes = new AES_DiffieHellman();
+            aes.GetSecretKey(RandomKey.GetKey(140),RandomKey.GetKey(16));
+
             string command = string.Empty;
             do
             {

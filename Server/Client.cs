@@ -214,12 +214,12 @@ namespace Server
             this.response_buf = new byte[Client.command_length];
             if (UsersData.IsUserExist(user_inf, ref Server.UserList))
             {
-                this.flag = true;                                               //Взаимодействие с пользователем активировано
+                this.flag = true;                                      //Взаимодействие с пользователем активировано
                 this.folder = user_inf.login_hash.ToString() + "//";   //Задаём персональное имя папки пользователя
 
                 //Отправляем ответ об успешной авторизации
-                this.response_buf[0] = Convert.ToByte(ServerAnswers.OK);        
-                networkStream.Write(response_buf, 0, response_buf.Length);
+                //this.response_buf[0] = Convert.ToByte(ServerAnswers.OK);        
+                //networkStream.Write(response_buf, 0, response_buf.Length);
 
                 //Обмениваемся ключами и создаём секретный
                 aes = new AES_DiffieHellman();                                 
@@ -247,18 +247,19 @@ namespace Server
 
                             this.response_buf[0] = Convert.ToByte(ServerAnswers.OK);
                             networkStream.Write(response_buf, 0, response_buf.Length);
+
+                            //Посылаем информацию о названиях всех доступных файлах
+                            FileHierarchy fileHierarchy = new FileHierarchy(this.folder);
+                            fileHierarchy.NetworkSendInfo(networkStream,aes); 
                         }
                         else
                         {
                             this.response_buf[0] = Convert.ToByte(ServerAnswers.NOPE);
                             networkStream.Write(response_buf, 0, response_buf.Length);
                         }
+                        break;
                     }
                 }
-
-                //Посылаем информацию о названиях всех доступных файлах
-                FileHierarchy fileHierarchy = new FileHierarchy(this.folder);
-                fileHierarchy.NetworkSendInfo(networkStream,aes); 
             }
             else
             {
