@@ -1,4 +1,6 @@
-﻿using Server.Security;
+﻿using Server.App_Data;
+using Server.Registration;
+using Server.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,8 +16,9 @@ namespace Server
     {
         private static Thread ServerThread;
         private static string LocalGroup = "228.228.228.228";
-
         public static string[] ServerManage = { "CUSTOMERS", "INFO", "HELP", "EXIT" };
+
+        //private static List<User> UserList = new List<User>();
         /* CUSTOMERS - all customers that has been connected
          * INFO - information about program
          * HELP - short description about server owner commands
@@ -24,6 +27,8 @@ namespace Server
 
         static void Main(string[] args)
         {
+            //AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+
             ServerThread = new Thread(startServer);
             ServerThread.IsBackground = true;
             ServerThread.Start();
@@ -38,8 +43,8 @@ namespace Server
 
         private static void startServer()
         {
-            AES_DiffieHellman aes = new AES_DiffieHellman();
-            aes.GetSecretKey(RandomKey.GetKey(140),RandomKey.GetKey(16));
+            /*AES_DiffieHellman aes = new AES_DiffieHellman();
+            aes.GetSecretKey(RandomKey.GetKey(140),RandomKey.GetKey(16));*/
 
             string command = string.Empty;
             do
@@ -93,6 +98,11 @@ namespace Server
                 string message = Encoding.Unicode.GetString(data);
                 Console.WriteLine(message);*/
             }
+        }
+
+        static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+              //UsersData.WriteUsersInf(server.users_inf_way, Server.UserList);
         }
     }
 }

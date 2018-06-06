@@ -34,15 +34,13 @@ namespace Server.FileWork
             return JsonConvert.SerializeObject(send_hierarhy);
         }
 
-        public void NetworkSendInfo(NetworkStream stream, AES_DiffieHellman aes)
+        public void NetworkSendInfo(NetworkStream stream, DIFFIE_HELMAN aes)
         {
-            string hierarhy = GetInfo();
-            byte[] arr = new byte[hierarhy.Length];
-            arr = Encoding.Default.GetBytes(hierarhy);
-            aes.Encrypt(ref arr);
-            file_length = BitConverter.GetBytes(arr.LongLength);
-            stream.Write(file_length, 0, file_length.Length); //Длина сериализованных даных
-            stream.Write(arr,0,arr.Length); //Сериализованные данные
+            string hierarhy = GetInfo(); //Массив стрингов
+            byte[] arr = new byte[hierarhy.LongCount()]; //Длина сериализованной строки
+            arr = Encoding.Default.GetBytes(hierarhy);   //Конвертируем в байты
+            arr = aes.Encrypt(arr);                           // Шифруем
+            FileProtocolReader.Write(arr, stream);
         }
     }
 }

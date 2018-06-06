@@ -42,14 +42,15 @@ namespace Server.App_Data
             File.WriteAllText(users_inf_way, JsonConvert.SerializeObject(UserList));
         }
 
-        public static bool IsUserExist(User user, ref List<User> UserList)
+        public static bool IsUserExist(ref User user, ref List<User> UserList)
         {
             if (UserList != null)
             {
                 foreach (User u in UserList)
                 {
-                    if (u.login_hash.ToString() == user.login_hash.ToString() && u.password_hash.ToString() == user.password_hash.ToString())
+                    if (Encoding.Default.GetString(u.login_hash) == Encoding.Default.GetString(user.login_hash) && Encoding.Default.GetString(u.password_hash) == Encoding.Default.GetString(user.password_hash))
                     {
+                        user.key = u.key; 
                         return true;
                     }
                 }

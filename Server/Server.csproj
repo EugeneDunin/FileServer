@@ -73,6 +73,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Security\DIFFIE_HELMAN.cs" />
     <Compile Include="Security\RandomKey.cs" />
     <Compile Include="Security\AES_DiffieHellman.cs" />
     <Compile Include="Security\StreamEncryptor.cs" />

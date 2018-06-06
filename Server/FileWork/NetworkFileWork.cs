@@ -18,44 +18,49 @@ namespace Server.FileWork
 
         public byte[] file_length = new byte[FileProtocol.message_length];
 
-        public void SecurityLoadAndSend(string file_name, NetworkStream networkStream, byte[] key, AES_DiffieHellman aes)
+        public void SecurityLoadAndSend(string file_name, NetworkStream networkStream, byte[] key, DIFFIE_HELMAN aes)
         {
             using (stream = new FileStream(file_name, FileMode.Open))
             {
                 long length = stream.Length;
                 int read = 0;
                 file_length = BitConverter.GetBytes(stream.Length);
-                aes.Encrypt(ref this.file_length);                      //Шифруем длину данных
+                aes.Encrypt(this.file_length);                      //Шифруем длину данных
                 networkStream.Write(file_length, 0, file_length.Length);
                 
                 while (length > 0)
                 {
                     read = stream.Read(buf, 0, buf.Length);
                     this.buf = StreamEncryptor.Encrypt(this.buf, key); //Дешифруем данные ключём потокового шифратора
-                    aes.Encrypt(ref this.buf);                         //Шифруем данные для передачи по сети
+                    aes.Encrypt(this.buf);                         //Шифруем данные для передачи по сети
                     networkStream.Write(this.buf, 0, read);
                     length -= read;
                 }
             }
         }
         
-        public void SecurityLoadAndSave(string file_name, NetworkStream networkStream, byte[] key, AES_DiffieHellman aes)
+        public void SecurityLoadAndSave(string file_name, NetworkStream networkStream, byte[] key, DIFFIE_HELMAN aes)
         {
             using (stream = new FileStream(file_name, FileMode.CreateNew))
             {
-                networkStream.Read(file_length, 0, file_length.Length); //Считываем  длину данных в потоке
-                aes.Decript(ref this.file_length);                      //Дешифрируем её
-                long length = BitConverter.ToInt64(file_length, 0);     //Переводим длину
+                /*networkStream.Read(file_length, 0, file_length.Length); //Считываем  длину данных в потоке
+                long length = BitConverter.ToInt64(file_length, 0);     //Переводим длину*/
 
-                int read = 0;
-                while (length > 0)
+                byte[] file_data = null;
+                FileProtocolReader.Read(ref file_data,networkStream);
+                file_data = aes.Decript(file_data);
+                this.buf = StreamEncryptor.Encrypt(file_data, key);   //Шифруем потоковым шифратором
+                stream.Write(buf, 0, buf.Length); //Записываем данные в файл
+
+                /*int read = 0;
+                while (networkStream.DataAvailable)
                 {
                     read = networkStream.Read(this.buf, 0, buf.Length); //Считываем данные из сетевого потока
-                    aes.Decript(ref this.buf);                          //Дешифруем данные из сети
+                    aes.Decript(this.buf);                          //Дешифруем данные из сети
                     this.buf = StreamEncryptor.Encrypt(this.buf,key);   //Шифруем потоковым шифратором
                     stream.Write(buf, 0, read); //Записываем данные в файл
                     length -= read;
-                } 
+                }*/
             }
         }
 
@@ -85,37 +90,18 @@ namespace Server.FileWork
             }
         }
 
-        public void KeysExchange(TcpClient client, NetworkStream networkStream, AES_DiffieHellman aes)
+        public void KeysExchange(TcpClient client, NetworkStream networkStream, DIFFIE_HELMAN aes)
         {
             //Отправляем свой ключ
             FileProtocolReader.Write(aes.PublicKey, networkStream);
-            FileProtocolReader.Write(aes.aes.IV, networkStream);
-
-            /*byte[] buf = new byte[aes.PublicKey.LongLength];
-            networkStream.Write(buf, 0, buf.Length);
-            networkStream.Write(aes.PublicKey, 0, aes.PublicKey.Length);
-            //Отправляем свой вектор инициализации
-            buf = new byte[aes.aes.IV.LongLength];
-            networkStream.Write(buf, 0, buf.Length);
-            networkStream.Write(aes.aes.IV, 0, aes.aes.IV.Length);*/
-
+            FileProtocolReader.Write(aes.IV, networkStream);
             while (client.Connected)
             {
                 if (networkStream.DataAvailable)
                 {
-                   byte[] key_length = new byte[sizeof(ulong)];
-                   networkStream.Read(this.buf, 0, buf.Length);
-
-                    byte[] client_key = new byte[buf.LongLength];
-                   networkStream.Read(client_key, 0, client_key.Length);
-
-                   byte[] iv_length = new byte[sizeof(ulong)];
-                   networkStream.Read(iv_length, 0, iv_length.Length);
-
-                   byte[] iv = new byte[buf.LongLength];
-                   networkStream.Read(iv, 0, iv_length.Length);
-
-                   aes.GetSecretKey(buf,iv);
+                   byte[] client_key = null;
+                   FileProtocolReader.Read(ref client_key, networkStream);
+                   aes.CreateSecretKey(client_key);
                    return;
                 }
             }

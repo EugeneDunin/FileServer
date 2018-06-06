@@ -12,8 +12,8 @@ namespace Server.Registration
     {
         public byte[] login_hash = new byte[32];
         public byte[] password_hash = new byte[32];
-        public string login { get; set; }
-        public string password { get; set; }
+        //public string login { get; set; }
+        //public string password { get; set; }
         public byte[] key { get; set; }
 
         /*public User(string login, string password)

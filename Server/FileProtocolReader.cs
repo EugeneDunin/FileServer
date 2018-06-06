@@ -9,7 +9,7 @@ namespace Server
 {
     static class FileProtocolReader
     {
-        public static void Read(ref byte[] buf,NetworkStream net)
+        public static void Read(ref byte[] buf, NetworkStream net)
         {
             byte[] length = new byte[sizeof(ulong)];
             net.Read(length, 0, length.Length);

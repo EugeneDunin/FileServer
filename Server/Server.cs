@@ -34,6 +34,7 @@ namespace Server
         {
             while (true)
             {
+                ServerListener.Pending();
                 Client client = new Client(ServerListener.AcceptTcpClient());
                 ClientList.Add(client);
                 Thread clientThread = new Thread(new ThreadStart(client.Listener));
